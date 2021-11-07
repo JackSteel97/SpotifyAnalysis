@@ -49,9 +49,9 @@ namespace SpotifyAnalysis
             return serviceProvider.BuildServiceProvider(true);
         }
 
-        public static async Task Main(string[] args)
+        public static void Main(string[] args)
         {
-            await CreateHostBuilder(args).UseConsoleLifetime().Build().RunAsync();
+            CreateHostBuilder(args).UseConsoleLifetime().Build().RunAsync().GetAwaiter().GetResult();
         }
 
         private static IHostBuilder CreateHostBuilder(string[] args) =>
