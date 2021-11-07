@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Humanizer;
 
 namespace SpotifyAnalysis
 {
@@ -26,7 +27,7 @@ namespace SpotifyAnalysis
             _transformer = transformer;
         }
 
-        public async Task Run()
+        public async Task<TimeSpan> Run()
         {
             Console.WriteLine("Please enter the full path to the end_song.json file(s) wrapped in quotes, and use spaces to separate each filepath: ");
             var entry = Console.ReadLine();
@@ -43,31 +44,31 @@ namespace SpotifyAnalysis
                 else
                 {
                     Console.WriteLine($"[{path}] Does not exist, please check your entry and try again.");
-                    return; // exit run.
+                    return TimeSpan.Zero; // exit run.
                 }
             }
 
             var endSongs = JsonReader.ReadStreamingHistory(validPaths);
 
+            DateTime start = DateTime.UtcNow;
             await _transformer.Process(endSongs, _appConfig.SpotifyClientId, _appConfig.SpotifyClientSecret);
-        }
+            DateTime end = DateTime.UtcNow;
 
-        private string GetSpotifyApiAccessToken()
-        {
-            Console.WriteLine();
-            Console.Write("Please enter your Spotify API Access Token: ");
-            var token = Console.ReadLine().Trim();
-            return token;
+            return end - start;
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Starting Spotify Analysis Service");
-
+            TimeSpan runningTime = TimeSpan.Zero;
             while (!cancellationToken.IsCancellationRequested)
             {
                 Console.Clear();
-                await Run();
+                if (runningTime.TotalMilliseconds > 0)
+                {
+                    Console.WriteLine($"Finished processing in {runningTime.Humanize(3)}");
+                }
+                runningTime = await Run();
             }
         }
 

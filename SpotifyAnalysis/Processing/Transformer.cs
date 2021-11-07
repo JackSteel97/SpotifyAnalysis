@@ -52,7 +52,7 @@ namespace SpotifyAnalysis.Processing
             catch (APITooManyRequestsException)
             {
                 // Backoff
-                var backoffDelay = 10_000 * attemptNumber;
+                var backoffDelay = 1_000 * attemptNumber;
                 _logger.LogWarning($"Rate-Limit reached, backing off for {backoffDelay / 1000} seconds");
                 await Task.Delay(backoffDelay);
                 await Process(song, ++attemptNumber);
