@@ -10,7 +10,7 @@ using SpotifyAnalysis.Database;
 namespace SpotifyAnalysis.Migrations
 {
     [DbContext(typeof(SpotifyAnalysisContext))]
-    [Migration("20211107121341_Initial")]
+    [Migration("20211107140345_Initial")]
     partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -68,8 +68,9 @@ namespace SpotifyAnalysis.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
-                    b.Property<DateTime>("ReleaseDate")
-                        .HasColumnType("timestamp without time zone");
+                    b.Property<string>("ReleaseDate")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.HasKey("SpotifyId");
 
@@ -177,6 +178,9 @@ namespace SpotifyAnalysis.Migrations
                     b.Property<int>("Key")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime>("LastUpdated")
+                        .HasColumnType("timestamp without time zone");
+
                     b.Property<float>("Liveness")
                         .HasColumnType("real");
 
@@ -185,6 +189,10 @@ namespace SpotifyAnalysis.Migrations
 
                     b.Property<int>("Mode")
                         .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
                     b.Property<string>("PreviewUrl")
                         .HasMaxLength(255)

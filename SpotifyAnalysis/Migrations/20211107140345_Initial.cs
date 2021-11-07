@@ -15,7 +15,7 @@ namespace SpotifyAnalysis.Migrations
                     SpotifyId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     ImageUrl = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     Name = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    ReleaseDate = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    ReleaseDate = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     LastUpdated = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
                 },
                 constraints: table =>
@@ -43,6 +43,7 @@ namespace SpotifyAnalysis.Migrations
                 columns: table => new
                 {
                     SpotifyId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Name = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     AlbumId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     TrackLengthMs = table.Column<int>(type: "integer", nullable: false),
                     Explicit = table.Column<bool>(type: "boolean", nullable: false),
@@ -58,7 +59,8 @@ namespace SpotifyAnalysis.Migrations
                     Speechiness = table.Column<float>(type: "real", nullable: false),
                     EstimatedTempo = table.Column<float>(type: "real", nullable: false),
                     TimeSignature = table.Column<float>(type: "real", nullable: false),
-                    Valence = table.Column<float>(type: "real", nullable: false)
+                    Valence = table.Column<float>(type: "real", nullable: false),
+                    LastUpdated = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
                 },
                 constraints: table =>
                 {

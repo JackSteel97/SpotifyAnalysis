@@ -18,7 +18,8 @@ namespace SpotifyAnalysis.Database.Models
         [MaxLength(255)]
         public string Name { get; set; }
 
-        public DateTime ReleaseDate { get; set; }
+        [MaxLength(100)]
+        public string ReleaseDate { get; set; }
 
         public DateTime LastUpdated { get; set; }
 
