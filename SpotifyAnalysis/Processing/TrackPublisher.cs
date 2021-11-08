@@ -45,30 +45,28 @@ namespace SpotifyAnalysis.Processing
                 _logger.LogInformation($"Getting Track data from spotify for [{id}]");
                 return await _spotifyClient.Tracks.Get(id);
             }
-            catch (APITooManyRequestsException)
+            catch (APITooManyRequestsException e)
             {
-                var delay = _backOffMs * attemptNumber;
-                _logger.LogWarning($"Rate-Limit reached, backing off getting Track [{id}] for {delay / 1000} seconds");
+                _logger.LogWarning($"Rate-Limit reached, backing off getting Track [{id}] for {e.RetryAfter.TotalSeconds} seconds");
 
-                await Task.Delay(delay);
+                await Task.Delay(e.RetryAfter);
                 return await GetFromSpotify(id, ++attemptNumber);
             }
         }
 
-        private async Task<TrackAudioFeatures> GetFeaturesFromSpotify(string id, int attemptNumber = 1)
+        private async Task<TrackAudioFeatures> GetFeaturesFromSpotify(string id)
         {
             try
             {
                 _logger.LogInformation($"Getting Track Audio Feature data from spotify for [{id}]");
                 return await _spotifyClient.Tracks.GetAudioFeatures(id);
             }
-            catch (APITooManyRequestsException)
+            catch (APITooManyRequestsException e)
             {
-                var delay = _backOffMs * attemptNumber;
-                _logger.LogWarning($"Rate-Limit reached, backing off getting Track Audio Features [{id}] for {delay / 1000} seconds");
+                _logger.LogWarning($"Rate-Limit reached, backing off getting Track Audio Features [{id}] for {e.RetryAfter.TotalSeconds} seconds");
 
-                await Task.Delay(delay);
-                return await GetFeaturesFromSpotify(id, ++attemptNumber);
+                await Task.Delay(e.RetryAfter);
+                return await GetFeaturesFromSpotify(id);
             }
         }
 

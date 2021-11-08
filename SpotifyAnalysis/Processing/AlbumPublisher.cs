@@ -35,20 +35,19 @@ namespace SpotifyAnalysis.Processing
             return await AddOrUpdate(spotifyAlbum);
         }
 
-        private async Task<FullAlbum> GetFromSpotify(string id, int attemptNumber = 1)
+        private async Task<FullAlbum> GetFromSpotify(string id)
         {
             try
             {
                 _logger.LogInformation($"Getting Album data from spotify for [{id}]");
                 return await _spotifyClient.Albums.Get(id);
             }
-            catch (APITooManyRequestsException)
+            catch (APITooManyRequestsException e)
             {
-                var delay = _backOffMs * attemptNumber;
-                _logger.LogWarning($"Rate-Limit reached, backing off getting Album [{id}] for {delay / 1000} seconds");
+                _logger.LogWarning($"Rate-Limit reached, backing off getting Album [{id}] for {e.RetryAfter.TotalSeconds} seconds");
 
-                await Task.Delay(delay);
-                return await GetFromSpotify(id, ++attemptNumber);
+                await Task.Delay(e.RetryAfter);
+                return await GetFromSpotify(id);
             }
         }
 

@@ -19,7 +19,6 @@ namespace SpotifyAnalysis.Processing
 
         protected readonly SpotifyClient _spotifyClient;
 
-        protected const int _backOffMs = 1000;
         private static readonly TimeSpan _staleTimeout = TimeSpan.FromDays(3);
 
         public BasePublisher(SpotifyAnalysisContext context, AppConfiguration appConfig, ILogger<BasePublisher> logger)
