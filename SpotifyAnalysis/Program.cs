@@ -7,7 +7,6 @@ using SpotifyAnalysis.Database;
 using SpotifyAnalysis.Models.Configuration;
 using SpotifyAnalysis.Processing;
 using System;
-using System.Threading.Tasks;
 
 namespace SpotifyAnalysis
 {
@@ -27,6 +26,9 @@ namespace SpotifyAnalysis
 
             serviceProvider.AddSingleton(appConfiguration);
             serviceProvider.AddTransient<Transformer>();
+            serviceProvider.AddSingleton<TrackPublisher>();
+            serviceProvider.AddSingleton<AlbumPublisher>();
+            serviceProvider.AddSingleton<ArtistPublisher>();
 
             // Logging setup.
             serviceProvider.AddLogging(opt =>
@@ -37,9 +39,8 @@ namespace SpotifyAnalysis
             });
 
             // Database DI.
-            serviceProvider.AddDbContext<SpotifyAnalysisContext>(options => options.UseNpgsql(appConfiguration.Database.ConnectionString)
-                .EnableSensitiveDataLogging(Environment.Equals("Development"))
-                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTrackingWithIdentityResolution));
+            serviceProvider.AddDbContext<SpotifyAnalysisContext>(options => options.UseNpgsql(appConfiguration.Database.ConnectionString, opt => opt.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
+                .EnableSensitiveDataLogging(Environment.Equals("Development")));
 
             // Main app.
             serviceProvider.AddHostedService<AnalysisProgram>();

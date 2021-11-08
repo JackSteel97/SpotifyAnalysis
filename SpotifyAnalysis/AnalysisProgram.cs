@@ -36,14 +36,15 @@ namespace SpotifyAnalysis
             List<string> validPaths = new List<string>();
             foreach (var path in filePaths)
             {
-                if (File.Exists(path))
+                var trimmedPath = path.Trim('"');
+                if (File.Exists(trimmedPath))
                 {
-                    Console.WriteLine($"Validated [{path}]");
-                    validPaths.Add(path);
+                    Console.WriteLine($"Validated [{trimmedPath}]");
+                    validPaths.Add(trimmedPath);
                 }
                 else
                 {
-                    Console.WriteLine($"[{path}] Does not exist, please check your entry and try again.");
+                    Console.WriteLine($"[{trimmedPath}] Does not exist, please check your entry and try again.");
                     return TimeSpan.Zero; // exit run.
                 }
             }
@@ -51,7 +52,7 @@ namespace SpotifyAnalysis
             var endSongs = JsonReader.ReadStreamingHistory(validPaths);
 
             DateTime start = DateTime.UtcNow;
-            await _transformer.Process(endSongs, _appConfig.SpotifyClientId, _appConfig.SpotifyClientSecret);
+            await _transformer.Process(endSongs);
             DateTime end = DateTime.UtcNow;
 
             return end - start;
