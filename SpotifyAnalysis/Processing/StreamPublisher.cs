@@ -15,7 +15,7 @@ namespace SpotifyAnalysis.Processing
 {
     public class StreamPublisher : BasePublisher
     {
-        private readonly ConcurrentDictionary<(string,DateTime), Stream> _streamsByEndTime = new ConcurrentDictionary<(string,DateTime), Stream>();
+        private readonly ConcurrentDictionary<(string, string, DateTime), Stream> _streamsByEndTime = new ConcurrentDictionary<(string, string, DateTime), Stream>();
         private readonly TrackPublisher _trackPublisher;
 
         public StreamPublisher(SpotifyAnalysisContext context, AppConfiguration appConfig, ILogger<TrackPublisher> logger, TrackPublisher trackPublisher) : base(context, appConfig, logger)
@@ -85,9 +85,9 @@ namespace SpotifyAnalysis.Processing
             _logger.LogInformation($"Loaded {existingEntries.Count} Streams from the existing database cache.");
         }
 
-        private static (string, DateTime) GetKey(Stream stream)
+        private static (string, string, DateTime) GetKey(Stream stream)
         {
-            return (stream.TrackId, stream.End);
+            return (stream.TrackId, stream.Username, stream.End);
         }
 
         private static string GetSpotifyId(string spotifyUri)
