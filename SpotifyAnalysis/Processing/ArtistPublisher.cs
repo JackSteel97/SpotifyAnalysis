@@ -5,6 +5,7 @@ using SpotifyAnalysis.Database.Models;
 using SpotifyAnalysis.Models.Configuration;
 using SpotifyAPI.Web;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,7 +15,7 @@ namespace SpotifyAnalysis.Processing
 {
     public class ArtistPublisher : BasePublisher
     {
-        private readonly Dictionary<string, Artist> _artistsById = new Dictionary<string, Artist>();
+        private readonly ConcurrentDictionary<string, Artist> _artistsById = new ConcurrentDictionary<string, Artist>();
 
         public ArtistPublisher(SpotifyAnalysisContext context, AppConfiguration appConfig, ILogger<ArtistPublisher> logger) : base(context, appConfig, logger)
         {
@@ -40,7 +41,7 @@ namespace SpotifyAnalysis.Processing
             }
 
             var spotifyArtist = await GetFromSpotify(id);
-            return await AddOrUpdate(spotifyArtist);
+            return _artistsById.AddOrUpdate(spotifyArtist.Id, GetArtist(spotifyArtist), (k, v) => Update(spotifyArtist, v));
         }
 
         private async Task<FullArtist> GetFromSpotify(string id)
@@ -59,16 +60,7 @@ namespace SpotifyAnalysis.Processing
             }
         }
 
-        private async Task<Artist> AddOrUpdate(FullArtist spotifyArtist)
-        {
-            if (_artistsById.TryGetValue(spotifyArtist.Id, out var existingArtist))
-            {
-                return await Update(spotifyArtist, existingArtist);
-            }
-            return await Add(spotifyArtist);
-        }
-
-        private async Task<Artist> Add(FullArtist spotifyArtist)
+        private static Artist GetArtist(FullArtist spotifyArtist)
         {
             var dbArtist = new Artist()
             {
@@ -79,20 +71,15 @@ namespace SpotifyAnalysis.Processing
                 LastUpdated = DateTime.UtcNow
             };
 
-            _context.Artist.Add(dbArtist);
-            await _context.SaveChangesAsync();
-            _artistsById.Add(dbArtist.SpotifyId, dbArtist);
-
             return dbArtist;
         }
 
-        private async Task<Artist> Update(FullArtist spotifyArtist, Artist existingArtist)
+        private static Artist Update(FullArtist spotifyArtist, Artist existingArtist)
         {
             existingArtist.LastUpdated = DateTime.UtcNow;
             existingArtist.Popularity = spotifyArtist.Popularity;
             existingArtist.ImageUrl = spotifyArtist.Images.FirstOrDefault()?.Url;
 
-            await _context.SaveChangesAsync();
             return existingArtist;
         }
 
@@ -104,7 +91,10 @@ namespace SpotifyAnalysis.Processing
                 .ToList();
             foreach (var entry in existingEntries)
             {
-                _artistsById.Add(entry.SpotifyId, entry);
+                if(!_artistsById.TryAdd(entry.SpotifyId, entry))
+                {
+                    throw new InvalidOperationException("Duplicates detected while loading Artists");
+                }
             }
 
             _logger.LogInformation($"Loaded {existingEntries.Count} Artists from the existing database cache.");

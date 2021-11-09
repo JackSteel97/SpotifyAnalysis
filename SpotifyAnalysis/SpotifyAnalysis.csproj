@@ -10,9 +10,13 @@
 
   <ItemGroup>
     <None Remove="appsettings.development.json" />
+    <None Remove="appsettings.production.json" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="appsettings.production.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="appsettings.development.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

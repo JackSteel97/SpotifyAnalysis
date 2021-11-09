@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SpotifyAnalysis.Database;
 
+#nullable disable
+
 namespace SpotifyAnalysis.Migrations
 {
     [DbContext(typeof(SpotifyAnalysisContext))]
@@ -15,9 +17,10 @@ namespace SpotifyAnalysis.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("Relational:MaxIdentifierLength", 63)
-                .HasAnnotation("ProductVersion", "5.0.11")
-                .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                .HasAnnotation("ProductVersion", "6.0.0")
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
+
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("AlbumArtist", b =>
                 {
@@ -60,7 +63,7 @@ namespace SpotifyAnalysis.Migrations
                         .HasColumnType("character varying(255)");
 
                     b.Property<DateTime>("LastUpdated")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
                         .HasMaxLength(255)
@@ -86,7 +89,7 @@ namespace SpotifyAnalysis.Migrations
                         .HasColumnType("character varying(255)");
 
                     b.Property<DateTime>("LastUpdated")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
                         .HasMaxLength(255)
@@ -104,14 +107,15 @@ namespace SpotifyAnalysis.Migrations
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<int>("DurationMs")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("End")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IncognitoMode")
                         .HasColumnType("boolean");
@@ -128,7 +132,7 @@ namespace SpotifyAnalysis.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<DateTime>("Start")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("TrackId")
                         .HasMaxLength(100)
@@ -177,7 +181,7 @@ namespace SpotifyAnalysis.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("LastUpdated")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<float>("Liveness")
                         .HasColumnType("real");

@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
+#nullable disable
+
 namespace SpotifyAnalysis.Migrations
 {
     public partial class Initial : Migration
@@ -16,7 +18,7 @@ namespace SpotifyAnalysis.Migrations
                     ImageUrl = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     Name = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     ReleaseDate = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    LastUpdated = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
+                    LastUpdated = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -31,7 +33,7 @@ namespace SpotifyAnalysis.Migrations
                     ImageUrl = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     Name = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     Popularity = table.Column<int>(type: "integer", nullable: false),
-                    LastUpdated = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
+                    LastUpdated = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -60,7 +62,7 @@ namespace SpotifyAnalysis.Migrations
                     EstimatedTempo = table.Column<float>(type: "real", nullable: false),
                     TimeSignature = table.Column<float>(type: "real", nullable: false),
                     Valence = table.Column<float>(type: "real", nullable: false),
-                    LastUpdated = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
+                    LastUpdated = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -69,8 +71,7 @@ namespace SpotifyAnalysis.Migrations
                         name: "FK_Track_Album_AlbumId",
                         column: x => x.AlbumId,
                         principalTable: "Album",
-                        principalColumn: "SpotifyId",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "SpotifyId");
                 });
 
             migrationBuilder.CreateTable(
@@ -128,8 +129,8 @@ namespace SpotifyAnalysis.Migrations
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Username = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    Start = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
-                    End = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    Start = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    End = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     DurationMs = table.Column<int>(type: "integer", nullable: false),
                     TrackId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     ReasonStart = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
@@ -144,8 +145,7 @@ namespace SpotifyAnalysis.Migrations
                         name: "FK_Stream_Track_TrackId",
                         column: x => x.TrackId,
                         principalTable: "Track",
-                        principalColumn: "SpotifyId",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "SpotifyId");
                 });
 
             migrationBuilder.CreateIndex(

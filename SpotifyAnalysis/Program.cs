@@ -12,7 +12,7 @@ namespace SpotifyAnalysis
 {
     public class Program
     {
-        private const string Environment = "Development";
+        private const string Environment = "Production";
 
         private static IServiceProvider ConfigureServices(IServiceCollection serviceProvider)
         {
@@ -25,7 +25,8 @@ namespace SpotifyAnalysis
             configuration.Bind("AppConfig", appConfiguration);
 
             serviceProvider.AddSingleton(appConfiguration);
-            serviceProvider.AddTransient<Transformer>();
+            serviceProvider.AddSingleton<Transformer>();
+            serviceProvider.AddSingleton<StreamPublisher>();
             serviceProvider.AddSingleton<TrackPublisher>();
             serviceProvider.AddSingleton<AlbumPublisher>();
             serviceProvider.AddSingleton<ArtistPublisher>();
@@ -40,7 +41,7 @@ namespace SpotifyAnalysis
 
             // Database DI.
             serviceProvider.AddDbContext<SpotifyAnalysisContext>(options => options.UseNpgsql(appConfiguration.Database.ConnectionString, opt => opt.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
-                .EnableSensitiveDataLogging(Environment.Equals("Development")));
+                .EnableSensitiveDataLogging(Environment.Equals("Development")), ServiceLifetime.Singleton);
 
             // Main app.
             serviceProvider.AddHostedService<AnalysisProgram>();

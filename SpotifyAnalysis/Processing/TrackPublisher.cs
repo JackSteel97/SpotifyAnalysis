@@ -5,6 +5,7 @@ using SpotifyAnalysis.Database.Models;
 using SpotifyAnalysis.Models.Configuration;
 using SpotifyAPI.Web;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,7 +15,7 @@ namespace SpotifyAnalysis.Processing
 {
     public class TrackPublisher : BasePublisher
     {
-        private readonly Dictionary<string, Track> _tracksById = new Dictionary<string, Track>();
+        private readonly ConcurrentDictionary<string, Track> _tracksById = new ConcurrentDictionary<string, Track>();
         private readonly ArtistPublisher _artistPublisher;
         private readonly AlbumPublisher _albumPublisher;
 
@@ -35,7 +36,7 @@ namespace SpotifyAnalysis.Processing
 
             var spotifyTrack = await GetFromSpotify(id);
             var spotifyTrackFeatures = await GetFeaturesFromSpotify(id);
-            return await AddOrUpdate(spotifyTrack, spotifyTrackFeatures);
+            return _tracksById.AddOrUpdate(spotifyTrack.Id, await GetTrack(spotifyTrack, spotifyTrackFeatures), (k,v) => Update(spotifyTrack, spotifyTrackFeatures, v));
         }
 
         private async Task<FullTrack> GetFromSpotify(string id, int attemptNumber = 1)
@@ -70,16 +71,7 @@ namespace SpotifyAnalysis.Processing
             }
         }
 
-        private async Task<Track> AddOrUpdate(FullTrack spotifyTrack, TrackAudioFeatures audioFeatures)
-        {
-            if (_tracksById.TryGetValue(spotifyTrack.Id, out var existingTrack))
-            {
-                return await Update(spotifyTrack, audioFeatures, existingTrack);
-            }
-            return await Add(spotifyTrack, audioFeatures);
-        }
-
-        private async Task<Track> Add(FullTrack spotifyTrack, TrackAudioFeatures audioFeatures)
+        private async Task<Track> GetTrack(FullTrack spotifyTrack, TrackAudioFeatures audioFeatures)
         {
             var dbTrack = new Track()
             {
@@ -108,14 +100,10 @@ namespace SpotifyAnalysis.Processing
                 LastUpdated = DateTime.UtcNow
             };
 
-            _context.Track.Add(dbTrack);
-            await _context.SaveChangesAsync();
-            _tracksById.Add(dbTrack.SpotifyId, dbTrack);
-
             return dbTrack;
         }
 
-        private async Task<Track> Update(FullTrack spotifyTrack, TrackAudioFeatures audioFeatures, Track existingTrack)
+        private static Track Update(FullTrack spotifyTrack, TrackAudioFeatures audioFeatures, Track existingTrack)
         {
             existingTrack.LastUpdated = DateTime.UtcNow;
             existingTrack.Name = spotifyTrack.Name;
@@ -134,7 +122,6 @@ namespace SpotifyAnalysis.Processing
             existingTrack.TimeSignature = audioFeatures.TimeSignature;
             existingTrack.Valence = audioFeatures.Valence;
 
-            await _context.SaveChangesAsync();
             return existingTrack;
         }
 
@@ -147,7 +134,10 @@ namespace SpotifyAnalysis.Processing
 
             foreach (var entry in existingEntries)
             {
-                _tracksById.Add(entry.SpotifyId, entry);
+                if(!_tracksById.TryAdd(entry.SpotifyId, entry))
+                {
+                    throw new InvalidOperationException("Duplicates detected while loading Tracks");
+                }
             }
 
             _logger.LogInformation($"Loaded {existingEntries.Count} Tracks from the existing database cache.");

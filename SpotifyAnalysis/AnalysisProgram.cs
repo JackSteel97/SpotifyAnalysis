@@ -16,13 +16,11 @@ namespace SpotifyAnalysis
 {
     public class AnalysisProgram : IHostedService
     {
-        private readonly AppConfiguration _appConfig;
         private readonly ILogger<AnalysisProgram> _logger;
         private readonly Transformer _transformer;
 
-        public AnalysisProgram(AppConfiguration appConfig, ILogger<AnalysisProgram> logger, Transformer transformer)
+        public AnalysisProgram(ILogger<AnalysisProgram> logger, Transformer transformer)
         {
-            _appConfig = appConfig;
             _logger = logger;
             _transformer = transformer;
         }

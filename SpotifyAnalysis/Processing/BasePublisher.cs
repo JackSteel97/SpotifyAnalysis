@@ -31,7 +31,7 @@ namespace SpotifyAnalysis.Processing
             _spotifyClient = new SpotifyClient(config);
         }
 
-        protected bool IsStale(DateTime timestamp)
+        protected static bool IsStale(DateTime timestamp)
         {
             var timeSince = DateTime.UtcNow - timestamp;
             return timeSince >= _staleTimeout;

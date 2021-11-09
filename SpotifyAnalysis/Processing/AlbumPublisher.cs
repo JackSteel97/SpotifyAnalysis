@@ -5,6 +5,7 @@ using SpotifyAnalysis.Database.Models;
 using SpotifyAnalysis.Models.Configuration;
 using SpotifyAPI.Web;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,7 +15,7 @@ namespace SpotifyAnalysis.Processing
 {
     public class AlbumPublisher : BasePublisher
     {
-        private readonly Dictionary<string, Album> _albumsById = new Dictionary<string, Album>();
+        private readonly ConcurrentDictionary<string, Album> _albumsById = new ConcurrentDictionary<string, Album>();
         private readonly ArtistPublisher _artistPublisher;
 
         public AlbumPublisher(SpotifyAnalysisContext context, AppConfiguration appConfig, ILogger<AlbumPublisher> logger, ArtistPublisher artistPublisher) : base(context, appConfig, logger)
@@ -32,7 +33,7 @@ namespace SpotifyAnalysis.Processing
             }
 
             var spotifyAlbum = await GetFromSpotify(id);
-            return await AddOrUpdate(spotifyAlbum);
+            return _albumsById.AddOrUpdate(spotifyAlbum.Id, await GetAlbum(spotifyAlbum), (k, v) => Update(spotifyAlbum, v).Result);
         }
 
         private async Task<FullAlbum> GetFromSpotify(string id)
@@ -51,16 +52,7 @@ namespace SpotifyAnalysis.Processing
             }
         }
 
-        private async Task<Album> AddOrUpdate(FullAlbum spotifyAlbum)
-        {
-            if (_albumsById.TryGetValue(spotifyAlbum.Id, out var existingAlbum))
-            {
-                return await Update(spotifyAlbum, existingAlbum);
-            }
-            return await Add(spotifyAlbum);
-        }
-
-        private async Task<Album> Add(FullAlbum spotifyAlbum)
+        private async Task<Album> GetAlbum(FullAlbum spotifyAlbum)
         {
             var dbAlbum = new Album()
             {
@@ -72,10 +64,6 @@ namespace SpotifyAnalysis.Processing
                 LastUpdated = DateTime.UtcNow
             };
 
-            _context.Album.Add(dbAlbum);
-            await _context.SaveChangesAsync();
-            _albumsById.Add(dbAlbum.SpotifyId, dbAlbum);
-
             return dbAlbum;
         }
 
@@ -86,7 +74,6 @@ namespace SpotifyAnalysis.Processing
             existingAlbum.ImageUrl = spotifyAlbum.Images.FirstOrDefault()?.Url;
             existingAlbum.Artists = await _artistPublisher.Get(spotifyAlbum.Artists.Select(x => x.Id));
 
-            await _context.SaveChangesAsync();
             return existingAlbum;
         }
 
@@ -98,7 +85,10 @@ namespace SpotifyAnalysis.Processing
                 .ToList();
             foreach (var entry in existingEntries)
             {
-                _albumsById.Add(entry.SpotifyId, entry);
+                if(!_albumsById.TryAdd(entry.SpotifyId, entry))
+                {
+                    throw new InvalidOperationException("Duplicates detected while loading Albums");
+                }
             }
 
             _logger.LogInformation($"Loaded {existingEntries.Count} Albums from the existing database cache.");
