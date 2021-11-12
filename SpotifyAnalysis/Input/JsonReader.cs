@@ -28,6 +28,11 @@ namespace SpotifyAnalysis.Input
                 fullHistory.AddRange(parsedContent);
             }
 
+
+            foreach(var entry in fullHistory)
+            {
+                entry.TrackStopTimestamp = DateTime.SpecifyKind(entry.TrackStopTimestamp, DateTimeKind.Utc);
+            }
             return fullHistory;
         }
     }

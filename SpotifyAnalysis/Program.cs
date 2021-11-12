@@ -12,7 +12,7 @@ namespace SpotifyAnalysis
 {
     public class Program
     {
-        private const string Environment = "Production";
+        private const string Environment = "Development";
 
         private static IServiceProvider ConfigureServices(IServiceCollection serviceProvider)
         {

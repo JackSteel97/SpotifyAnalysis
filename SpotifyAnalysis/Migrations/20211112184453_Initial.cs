@@ -126,13 +126,13 @@ namespace SpotifyAnalysis.Migrations
                 name: "Stream",
                 columns: table => new
                 {
+                    Username = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    End = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    TrackId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Username = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     Start = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    End = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     DurationMs = table.Column<int>(type: "integer", nullable: false),
-                    TrackId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     ReasonStart = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
                     ReasonEnd = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
                     Shuffle = table.Column<bool>(type: "boolean", nullable: false),
@@ -140,12 +140,13 @@ namespace SpotifyAnalysis.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Stream", x => x.Id);
+                    table.PrimaryKey("PK_Stream", x => new { x.Username, x.TrackId, x.End });
                     table.ForeignKey(
                         name: "FK_Stream_Track_TrackId",
                         column: x => x.TrackId,
                         principalTable: "Track",
-                        principalColumn: "SpotifyId");
+                        principalColumn: "SpotifyId",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(

@@ -15,8 +15,9 @@ namespace SpotifyAnalysis.Processing
 {
     public class StreamPublisher : BasePublisher
     {
-        private readonly ConcurrentDictionary<(string, string, DateTime), Stream> _streamsByEndTime = new ConcurrentDictionary<(string, string, DateTime), Stream>();
+        private readonly ConcurrentDictionary<(string, string, string), Stream> _streamCache = new ConcurrentDictionary<(string, string, string), Stream>();
         private readonly TrackPublisher _trackPublisher;
+        private readonly ConcurrentBag<Stream> _newStreams = new ConcurrentBag<Stream>();
 
         public StreamPublisher(SpotifyAnalysisContext context, AppConfiguration appConfig, ILogger<TrackPublisher> logger, TrackPublisher trackPublisher) : base(context, appConfig, logger)
         {
@@ -28,10 +29,16 @@ namespace SpotifyAnalysis.Processing
         {
             try
             {
-                Stream stream = await ConvertToStream(song);
-                if(!_streamsByEndTime.TryAdd(GetKey(stream), stream))
+                var trackId = GetSpotifyId(song.TrackUri);
+                var key = GetKey(song, trackId);
+                if (!_streamCache.ContainsKey(key))
                 {
-                    _logger.LogInformation("Skipping duplicate stream");
+                    Stream stream = await ConvertToStream(song);
+                    _streamCache.TryAdd(key, stream);
+                }
+                else
+                {
+                    _logger.LogInformation($"Skipping duplicate stream [{song.TrackName} - {song.ArtistName}] at [{song.TrackStopTimestamp.ToString("G")}]");
                 }
             }
             catch (Exception ex)
@@ -42,9 +49,10 @@ namespace SpotifyAnalysis.Processing
 
         public async Task SaveChanges()
         {
-            foreach(var stream in _streamsByEndTime.Values)
+            foreach (var stream in _streamCache.Values)
             {
-                if(stream.Id == 0)
+                // Not already tracked in db.
+                if (stream.Id == 0)
                 {
                     _context.Stream.Add(stream);
                 }
@@ -56,27 +64,29 @@ namespace SpotifyAnalysis.Processing
         {
             var trackId = GetSpotifyId(song.TrackUri);
 
-            var result = new Stream();
-            result.Username = song.Username;
-            result.DurationMs = song.MsPlayed;
-            result.End = song.TrackStopTimestamp;
-            result.Start = song.TrackStopTimestamp.Subtract(TimeSpan.FromMilliseconds(song.MsPlayed));
-            result.TrackId = trackId;
-            result.ReasonStart = song.ReasonStart;
-            result.ReasonEnd = song.ReasonEnd;
-            result.Shuffle = song.Shuffle.GetValueOrDefault();
-            result.IncognitoMode = song.IncognitoMode.GetValueOrDefault();
-            result.Track = await _trackPublisher.Get(trackId);
+            var result = new Stream
+            {
+                Username = song.Username,
+                DurationMs = song.MsPlayed,
+                End = song.TrackStopTimestamp,
+                Start = song.TrackStopTimestamp.Subtract(TimeSpan.FromMilliseconds(song.MsPlayed)),
+                TrackId = trackId,
+                ReasonStart = song.ReasonStart,
+                ReasonEnd = song.ReasonEnd,
+                Shuffle = song.Shuffle.GetValueOrDefault(),
+                IncognitoMode = song.IncognitoMode.GetValueOrDefault(),
+                Track = await _trackPublisher.Get(trackId)
+            };
 
             return result;
         }
 
         private void Initialise()
         {
-            var existingEntries = _context.Stream.Include(x => x.Track).ToList();
+            var existingEntries = _context.Stream.AsNoTracking().ToList();
             foreach (var entry in existingEntries)
             {
-                if(!_streamsByEndTime.TryAdd(GetKey(entry), entry))
+                if (!_streamCache.TryAdd(GetKey(entry), entry))
                 {
                     throw new Exception("Duplicates detected");
                 }
@@ -85,9 +95,14 @@ namespace SpotifyAnalysis.Processing
             _logger.LogInformation($"Loaded {existingEntries.Count} Streams from the existing database cache.");
         }
 
-        private static (string, string, DateTime) GetKey(Stream stream)
+        private static (string, string, string) GetKey(Stream stream)
         {
-            return (stream.TrackId, stream.Username, stream.End);
+            return (stream.TrackId, stream.Username, stream.End.ToString("O"));
+        }
+
+        private static (string, string, string) GetKey(EndSongEntry song, string trackId)
+        {
+            return (trackId, song.Username, song.TrackStopTimestamp.ToString("O"));
         }
 
         private static string GetSpotifyId(string spotifyUri)

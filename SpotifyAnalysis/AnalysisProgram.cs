@@ -62,7 +62,6 @@ namespace SpotifyAnalysis
             TimeSpan runningTime = TimeSpan.Zero;
             while (!cancellationToken.IsCancellationRequested)
             {
-                Console.Clear();
                 if (runningTime.TotalMilliseconds > 0)
                 {
                     Console.WriteLine($"Finished processing in {runningTime.Humanize(3)}");

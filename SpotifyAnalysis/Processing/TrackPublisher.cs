@@ -43,7 +43,7 @@ namespace SpotifyAnalysis.Processing
         {
             try
             {
-                _logger.LogInformation($"Getting Track data from spotify for [{id}]");
+                _logger.LogDebug($"Getting Track data from spotify for [{id}]");
                 return await _spotifyClient.Tracks.Get(id);
             }
             catch (APITooManyRequestsException e)
@@ -59,7 +59,7 @@ namespace SpotifyAnalysis.Processing
         {
             try
             {
-                _logger.LogInformation($"Getting Track Audio Feature data from spotify for [{id}]");
+                _logger.LogDebug($"Getting Track Audio Feature data from spotify for [{id}]");
                 return await _spotifyClient.Tracks.GetAudioFeatures(id);
             }
             catch (APITooManyRequestsException e)
@@ -127,10 +127,7 @@ namespace SpotifyAnalysis.Processing
 
         private void Initialise()
         {
-            var existingEntries = _context.Track
-                .Include(x => x.Album)
-                .Include(x => x.Artists)
-                .ToList();
+            var existingEntries = _context.Track.ToList();
 
             foreach (var entry in existingEntries)
             {

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using SpotifyAnalysis.Database;
 using SpotifyAnalysis.Database.Models;
 using SpotifyAnalysis.Models.Configuration;
+using SpotifyAnalysis.Utilities;
 using SpotifyAPI.Web;
 using System;
 using System.Collections.Concurrent;
@@ -15,7 +16,7 @@ namespace SpotifyAnalysis.Processing
 {
     public class AlbumPublisher : BasePublisher
     {
-        private readonly ConcurrentDictionary<string, Album> _albumsById = new ConcurrentDictionary<string, Album>();
+        private readonly ConcurrentDictionary<string, AsyncLazy<Album>> _albumsById = new ConcurrentDictionary<string, AsyncLazy<Album>>();
         private readonly ArtistPublisher _artistPublisher;
 
         public AlbumPublisher(SpotifyAnalysisContext context, AppConfiguration appConfig, ILogger<AlbumPublisher> logger, ArtistPublisher artistPublisher) : base(context, appConfig, logger)
@@ -27,20 +28,24 @@ namespace SpotifyAnalysis.Processing
         public async Task<Album> Get(string id)
         {
             // Try getting from cache.
-            if (_albumsById.TryGetValue(id, out var cachedAlbum) && !IsStale(cachedAlbum.LastUpdated))
+            if (_albumsById.TryGetValue(id, out var cachedAlbum) && !IsStale((await cachedAlbum.Value).LastUpdated))
             {
-                return cachedAlbum;
+                return await cachedAlbum.Value;
             }
 
             var spotifyAlbum = await GetFromSpotify(id);
-            return _albumsById.AddOrUpdate(spotifyAlbum.Id, await GetAlbum(spotifyAlbum), (k, v) => Update(spotifyAlbum, v).Result);
+
+            var albumTask = _albumsById.AddOrUpdate(spotifyAlbum.Id,
+                new AsyncLazy<Album>(() => GetAlbum(spotifyAlbum)),
+                (k, v) => new AsyncLazy<Album>(() => Update(spotifyAlbum, v)));
+            return await albumTask.Value;
         }
 
         private async Task<FullAlbum> GetFromSpotify(string id)
         {
             try
             {
-                _logger.LogInformation($"Getting Album data from spotify for [{id}]");
+                _logger.LogDebug($"Getting Album data from spotify for [{id}]");
                 return await _spotifyClient.Albums.Get(id);
             }
             catch (APITooManyRequestsException e)
@@ -67,8 +72,9 @@ namespace SpotifyAnalysis.Processing
             return dbAlbum;
         }
 
-        private async Task<Album> Update(FullAlbum spotifyAlbum, Album existingAlbum)
+        private async Task<Album> Update(FullAlbum spotifyAlbum, AsyncLazy<Album> existingAlbumTask)
         {
+            var existingAlbum = await existingAlbumTask.Value;
             existingAlbum.LastUpdated = DateTime.UtcNow;
             existingAlbum.ReleaseDate = spotifyAlbum.ReleaseDate;
             existingAlbum.ImageUrl = spotifyAlbum.Images.FirstOrDefault()?.Url;
@@ -79,13 +85,10 @@ namespace SpotifyAnalysis.Processing
 
         private void Initialise()
         {
-            var existingEntries = _context.Album
-                .Include(x => x.Artists)
-                .Include(x => x.Tracks)
-                .ToList();
+            var existingEntries = _context.Album.ToList();
             foreach (var entry in existingEntries)
             {
-                if(!_albumsById.TryAdd(entry.SpotifyId, entry))
+                if (!_albumsById.TryAdd(entry.SpotifyId, new AsyncLazy<Album>(() => Task.FromResult(entry))))
                 {
                     throw new InvalidOperationException("Duplicates detected while loading Albums");
                 }

@@ -28,16 +28,37 @@ namespace SpotifyAnalysis.Processing
         public async Task Process(List<EndSongEntry> input)
         {
             int saveCounter = 1;
+
+            var cts = new CancellationTokenSource();
+            var ct = cts.Token; 
+
+            var progressTask = Task.Run(async () =>
+            {
+                
+                while (!ct.IsCancellationRequested)
+                {
+                    _logger.LogInformation($"[{saveCounter}/{input.Count} - {(float)saveCounter / input.Count:P}] Processed");
+
+                    if (!ct.IsCancellationRequested)
+                    {
+                        await Task.Delay(10_000);
+                    }
+                }
+            });
+
             await Parallel.ForEachAsync(input, async (song, token) =>
             {
                 if (!string.IsNullOrWhiteSpace(song.TrackUri))
                 {
-                    _logger.LogInformation($"Getting detailed data for a stream of [{song.TrackName} - {song.ArtistName}]");
+                    _logger.LogDebug($"Getting detailed data for a stream of [{song.TrackName} - {song.ArtistName}]");
                     await _streamPublisher.Process(song);
-                    _logger.LogInformation($"[{saveCounter}/{input.Count} - {(float)saveCounter / input.Count:P}] Processed");
+                    _logger.LogDebug($"[{saveCounter}/{input.Count} - {(float)saveCounter / input.Count:P}] Processed");
                 }
                 Interlocked.Increment(ref saveCounter);
             });
+
+
+            cts.Cancel();
 
             _logger.LogInformation("Saving at end of processing...");
             await _streamPublisher.SaveChanges();

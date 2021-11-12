@@ -48,7 +48,7 @@ namespace SpotifyAnalysis.Processing
         {
             try
             {
-                _logger.LogInformation($"Getting Artist data from spotify for [{id}]");
+                _logger.LogDebug($"Getting Artist data from spotify for [{id}]");
                 return await _spotifyClient.Artists.Get(id);
             }
             catch (APITooManyRequestsException e)
@@ -85,10 +85,7 @@ namespace SpotifyAnalysis.Processing
 
         private void Initialise()
         {
-            var existingEntries = _context.Artist
-                .Include(x => x.Albums)
-                .Include(x => x.Tracks)
-                .ToList();
+            var existingEntries = _context.Artist.ToList();
             foreach (var entry in existingEntries)
             {
                 if(!_artistsById.TryAdd(entry.SpotifyId, entry))

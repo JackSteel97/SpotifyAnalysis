@@ -105,17 +105,25 @@ namespace SpotifyAnalysis.Migrations
 
             modelBuilder.Entity("SpotifyAnalysis.Database.Models.Stream", b =>
                 {
+                    b.Property<string>("Username")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("TrackId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("End")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DurationMs")
+                        .HasColumnType("integer");
+
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<int>("DurationMs")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("End")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IncognitoMode")
                         .HasColumnType("boolean");
@@ -134,15 +142,7 @@ namespace SpotifyAnalysis.Migrations
                     b.Property<DateTime>("Start")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("TrackId")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("Username")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.HasKey("Id");
+                    b.HasKey("Username", "TrackId", "End");
 
                     b.HasIndex("TrackId");
 
@@ -253,7 +253,9 @@ namespace SpotifyAnalysis.Migrations
                 {
                     b.HasOne("SpotifyAnalysis.Database.Models.Track", "Track")
                         .WithMany("Streams")
-                        .HasForeignKey("TrackId");
+                        .HasForeignKey("TrackId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Track");
                 });
