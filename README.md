@@ -12,7 +12,7 @@ You will need to configure an appsettings file with the following details, this 
 
 In the following format:
 
-```
+```json
 "AppConfig": {
     "Database": {
         "ConnectionString": ""
